@@ -25,7 +25,8 @@ public class ReservationController {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            String errorMsg = e.getMessage() != null ? e.getMessage().replace("\"", "\\\"") : "Erreur de connexion au BackOffice";
+            String errorMsg = e.getMessage() != null ? e.getMessage().replace("\"", "\\\"")
+                    : "Erreur de connexion au BackOffice";
             return "{\"status\":\"error\",\"code\":500,\"message\":\"" + errorMsg + "\",\"data\":null}";
         }
     }

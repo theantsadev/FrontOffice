@@ -86,7 +86,7 @@ if /i "%START_TOMCAT%"=="O" (
     start "" "%TOMCAT_HOME%\bin\startup.bat"
     timeout /t 3 >nul
     echo Tomcat demarre! Attendez quelques secondes pour le deploiement...
-    echo Puis ouvrez: http://localhost:8080/backoffice/pages/
+    echo Puis ouvrez: http://localhost:8080/frontoffice/pages/
 )
 echo.
 pause
