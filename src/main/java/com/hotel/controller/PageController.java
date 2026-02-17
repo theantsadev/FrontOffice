@@ -1,23 +1,18 @@
 package com.hotel.controller;
 
-import servlet.annotations.Controller;
-import servlet.ModelView;
-import servlet.annotations.mapping.GetMapping;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class PageController {
 
     @GetMapping(value = "/pages/")
-    public ModelView index() {
-        ModelView mv = new ModelView();
-        mv.setView("pages/index.jsp");
-        return mv;
+    public String index() {
+        return "pages/index.jsp";
     }
 
     @GetMapping(value = "/pages/liste-reservations")
-    public ModelView listeReservations() {
-        ModelView mv = new ModelView();
-        mv.setView("pages/liste-reservations.jsp");
-        return mv;
+    public String listeReservations() {
+        return "pages/liste-reservations.jsp";
     }
 }

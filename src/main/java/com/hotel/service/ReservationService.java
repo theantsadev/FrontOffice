@@ -1,5 +1,8 @@
 package com.hotel.service;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,31 +11,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Properties;
 
+@Service
 public class ReservationService {
 
+    @Value("${backoffice.api.url:http://localhost:8080/backoffice}")
     private String backofficeBaseUrl;
-
-    public ReservationService() {
-        loadConfig();
-    }
-
-    private void loadConfig() {
-        try {
-            Properties props = new Properties();
-            InputStream input = getClass().getClassLoader()
-                    .getResourceAsStream("api.properties");
-            if (input != null) {
-                props.load(input);
-                backofficeBaseUrl = props.getProperty("backoffice.api.url", "http://localhost:8080/backoffice");
-                input.close();
-            } else {
-                backofficeBaseUrl = "http://localhost:8080/backoffice";
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            backofficeBaseUrl = "http://localhost:8080/backoffice";
-        }
-    }
 
     /**
      * Appel API BackOffice : GET /reservations
