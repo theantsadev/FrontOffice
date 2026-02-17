@@ -38,7 +38,7 @@ echo Le fichier WAR a ete genere: target\frontoffice.war
 echo.
 
 REM Deploiement automatique vers Tomcat
-set TOMCAT_HOME=D:\apache-tomcat-10.1.24
+set TOMCAT_HOME=c:\Program Files\Apache Software Foundation\Tomcat 10.1
 set WEBAPPS_DIR=%TOMCAT_HOME%\webapps
 
 echo 3. Deploiement vers Tomcat...
@@ -86,7 +86,7 @@ if /i "%START_TOMCAT%"=="O" (
     start "" "%TOMCAT_HOME%\bin\startup.bat"
     timeout /t 3 >nul
     echo Tomcat demarre! Attendez quelques secondes pour le deploiement...
-    echo Puis ouvrez: http://localhost:8080/backoffice/pages/
+    echo Puis ouvrez: http://localhost:8080/frontoffice/pages/
 )
 echo.
 pause
