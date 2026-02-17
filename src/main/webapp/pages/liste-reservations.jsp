@@ -47,6 +47,17 @@
             padding: 40px;
             color: #1a5276;
         }
+        .token-info {
+            background: #e7f3ff;
+            border-left: 4px solid #1a5276;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .token-info button {
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -56,6 +67,12 @@
             <div>
                 <a href="${pageContext.request.contextPath}/pages/" class="btn btn-outline-secondary">Accueil</a>
             </div>
+        </div>
+
+        <!-- Affichage du statut du token -->
+        <div id="tokenStatus" class="token-info" style="display: none;">
+            <strong>Token:</strong> <span id="tokenDisplay">***</span> | 
+            <button class="btn btn-sm btn-outline-danger" onclick="changeToken()">Changer</button>
         </div>
 
         <div class="filter-section">
@@ -78,10 +95,6 @@
                 <span class="visually-hidden">Chargement...</span>
             </div>
             <p class="mt-2">Chargement des réservations...</p>
-        </div>
-
-        <div id="errorDiv" style="display: none;">
-            <div class="alert alert-danger" id="errorMessage"></div>
         </div>
 
         <div id="tableContainer" style="display: none;">
@@ -108,9 +121,14 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="${pageContext.request.contextPath}/js/api-helper.js"></script>
     <script>
         const contextPath = '${pageContext.request.contextPath}';
 
+        /**
+         * Charge les réservations depuis le FrontOffice
+         * Le FrontOffice les récupère du BackOffice avec le token
+         */
         async function loadReservations(url) {
             if (!url) {
                 url = contextPath + '/reservations';
@@ -118,72 +136,66 @@
 
             document.getElementById('loadingDiv').style.display = 'block';
             document.getElementById('tableContainer').style.display = 'none';
-            document.getElementById('errorDiv').style.display = 'none';
 
             try {
-                const response = await fetch(url);
-                const text = await response.text();
-                console.log('Raw response:', text);
-
-                const result = JSON.parse(text);
-                console.log('Parsed result:', result);
-
-                const tbody = document.getElementById('reservationTableBody');
-                tbody.innerHTML = '';
-
-                let reservations = [];
-                if (result.status === 'success' && result.data) {
-                    reservations = result.data;
-                } else if (Array.isArray(result.data)) {
-                    reservations = result.data;
-                } else if (Array.isArray(result)) {
-                    reservations = result;
-                } else if (result.status === 'error') {
-                    throw new Error(result.message || 'Erreur du serveur');
-                }
-
-                console.log('Reservations array:', reservations);
-
-                if (reservations.length > 0) {
-                    reservations.forEach(function(reservation, index) {
-                        console.log('Reservation ' + index + ':', reservation);
-
-                        var date = new Date(reservation.date_heure_arrivee);
-                        var formattedDate = date.toLocaleString('fr-FR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
-
-                        var row = document.createElement('tr');
-                        row.innerHTML =
-                            '<td><span class="badge bg-primary badge-custom">' + reservation.id_reservation + '</span></td>' +
-                            '<td><strong>' + reservation.id_client + '</strong></td>' +
-                            '<td>' + (reservation.nom_hotel || 'N/A') + '</td>' +
-                            '<td>' + reservation.nb_passager + '</td>' +
-                            '<td>' + formattedDate + '</td>';
-                        tbody.appendChild(row);
-                    });
-                    document.getElementById('emptyMessage').style.display = 'none';
-                } else {
-                    document.getElementById('emptyMessage').style.display = 'block';
-                }
-
-                document.getElementById('loadingDiv').style.display = 'none';
-                document.getElementById('tableContainer').style.display = 'block';
+                const result = await fetchApi(url, {}, true);
+                
+                handleApiResponse(result, (data) => {
+                    displayReservations(data);
+                    document.getElementById('loadingDiv').style.display = 'none';
+                    document.getElementById('tableContainer').style.display = 'block';
+                    updateTokenDisplay();
+                }, (code, message) => {
+                    if (code === 403) {
+                        // Token invalide ou expiré, demander un nouveau
+                        clearStoredToken();
+                        showApiError(403, 'Token invalide. Veuillez vous réauthentifier.');
+                    } else {
+                        showApiError(code, message);
+                    }
+                    document.getElementById('loadingDiv').style.display = 'none';
+                });
             } catch (error) {
                 console.error('Erreur:', error);
+                showApiError(0, 'Erreur lors du chargement: ' + error.message);
                 document.getElementById('loadingDiv').style.display = 'none';
-                document.getElementById('errorDiv').style.display = 'block';
-                document.getElementById('errorMessage').textContent =
-                    'Erreur lors du chargement des réservations : ' + error.message;
             }
         }
 
+        /**
+         * Affiche les réservations dans le tableau
+         */
+        function displayReservations(reservations) {
+            const tbody = document.getElementById('reservationTableBody');
+            tbody.innerHTML = '';
+
+            if (!Array.isArray(reservations) || reservations.length === 0) {
+                document.getElementById('emptyMessage').style.display = 'block';
+                return;
+            }
+
+            reservations.forEach((reservation) => {
+                const formattedDate = formatDateFR(reservation.date_heure_arrivee);
+
+                const row = document.createElement('tr');
+                row.innerHTML = '' +
+                    '<td><span class="badge bg-primary badge-custom">' + escapeHtml(reservation.id_reservation) + '</span></td>' +
+                    '<td><strong>' + escapeHtml(reservation.id_client) + '</strong></td>' +
+                    '<td>' + escapeHtml(reservation.nom_hotel || 'N/A') + '</td>' +
+                    '<td>' + escapeHtml(String(reservation.nb_passager)) + '</td>' +
+                    '<td>' + escapeHtml(formattedDate) + '</td>';
+
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('emptyMessage').style.display = 'none';
+        }
+
+        /**
+         * Filtre les réservations par date
+         */
         function filterByDate() {
-            var dateInput = document.getElementById('filterDate');
+            const dateInput = document.getElementById('filterDate');
             if (dateInput.value) {
                 loadReservations(contextPath + '/reservations?date=' + dateInput.value);
             } else {
@@ -191,12 +203,42 @@
             }
         }
 
+        /**
+         * Affiche toutes les réservations
+         */
         function showAll() {
             document.getElementById('filterDate').value = '';
             loadReservations();
         }
 
+        /**
+         * Affiche ou met à jour le statut du token
+         */
+        function updateTokenDisplay() {
+            const token = getStoredToken();
+            if (token) {
+                document.getElementById('tokenStatus').style.display = 'block';
+                document.getElementById('tokenDisplay').textContent = token.substring(0, 10) + '...';
+            }
+        }
+
+        /**
+         * Permet de changer le token
+         */
+        function changeToken() {
+            clearStoredToken();
+            const newToken = promptForToken();
+            if (newToken) {
+                updateTokenDisplay();
+                loadReservations();
+            }
+        }
+
+        /**
+         * Au chargement de la page, afficher le token s'il existe et charger les réservations
+         */
         window.onload = function() {
+            updateTokenDisplay();
             loadReservations();
         };
     </script>

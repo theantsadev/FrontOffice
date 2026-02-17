@@ -1,9 +1,14 @@
 package com.hotel.controller;
 
+
 import com.hotel.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * RestController pour les réservations
+ * Proxy vers l'API BackOffice avec gestion du token
+ */
 @RestController
 @RequestMapping("/reservations")
 public class ReservationController {
@@ -11,23 +16,34 @@ public class ReservationController {
     @Autowired
     private ReservationService reservationService;
 
+
+
     /**
-     * Proxy vers l'API BackOffice : GET /reservations
-     * Avec ou sans filtre par date
+     * GET /reservations
+     * Récupère toutes les réservations ou filtre par date
+     * Requiert un token valide
      */
     @GetMapping
-    public String getReservations(@RequestParam(name = "date", required = false) String dateStr) {
+    public String getReservations(
+            @RequestParam(name = "token", required = false) String token,
+            @RequestParam(name = "date", required = false) String dateStr) {
+
         try {
+
+            // Appeler le BackOffice avec le token
+            String jsonResponse;
             if (dateStr != null && !dateStr.isEmpty()) {
-                return reservationService.getReservationsByDateJson(dateStr);
+                jsonResponse = reservationService.getReservationsByDateJson(dateStr, token);
             } else {
-                return reservationService.getAllReservationsJson();
+                jsonResponse = reservationService.getAllReservationsJson(token);
             }
+
+            return jsonResponse;
+
         } catch (Exception e) {
             e.printStackTrace();
-            String errorMsg = e.getMessage() != null ? e.getMessage().replace("\"", "\\\"")
-                    : "Erreur de connexion au BackOffice";
-            return "{\"status\":\"error\",\"code\":500,\"message\":\"" + errorMsg + "\",\"data\":null}";
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "Erreur de connexion au BackOffice";
+            return reservationService.getErrorJson(500, errorMsg);
         }
     }
 }
