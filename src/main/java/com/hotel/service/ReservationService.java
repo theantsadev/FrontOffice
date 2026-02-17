@@ -9,8 +9,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Properties;
 
+/**
+ * Service pour communiquer avec l'API BackOffice
+ * Passe le token pour authentifier les requêtes
+ */
 @Service
 public class ReservationService {
 
@@ -18,23 +21,24 @@ public class ReservationService {
     private String backofficeBaseUrl;
 
     /**
-     * Appel API BackOffice : GET /reservations
-     * Retourne le JSON brut de toutes les reservations
+     * Récupère toutes les réservations du BackOffice
      */
-    public String getAllReservationsJson() throws IOException {
-        String url = backofficeBaseUrl + "/reservations";
+    public String getAllReservationsJson(String token) throws IOException {
+        String url = backofficeBaseUrl + "/reservations?token=" + encodeUrl(token);
         return makeGetRequest(url);
     }
 
     /**
-     * Appel API BackOffice : GET /reservations?date=yyyy-MM-dd
-     * Retourne le JSON brut des reservations filtrees par date
+     * Récupère les réservations filtrées par date du BackOffice
      */
-    public String getReservationsByDateJson(String date) throws IOException {
-        String url = backofficeBaseUrl + "/reservations?date=" + date;
+    public String getReservationsByDateJson(String date, String token) throws IOException {
+        String url = backofficeBaseUrl + "/reservations?date=" + encodeUrl(date) + "&token=" + encodeUrl(token);
         return makeGetRequest(url);
     }
 
+    /**
+     * Effectue une requête GET vers le BackOffice
+     */
     private String makeGetRequest(String urlString) throws IOException {
         URL url = new URL(urlString);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -63,5 +67,24 @@ public class ReservationService {
         }
 
         return response.toString();
+    }
+
+    /**
+     * Encode une chaîne pour l'URL
+     */
+    private String encodeUrl(String value) {
+        try {
+            return java.net.URLEncoder.encode(value, "UTF-8");
+        } catch (Exception e) {
+            return value;
+        }
+    }
+
+    /**
+     * Génère un JSON d'erreur formaté
+     */
+    public String getErrorJson(int code, String message) {
+        String escapedMsg = message.replace("\"", "\\\"").replace("\n", "\\n");
+        return "{\"status\":\"error\",\"code\":" + code + ",\"message\":\"" + escapedMsg + "\",\"data\":null}";
     }
 }
