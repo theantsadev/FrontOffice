@@ -90,5 +90,6 @@ Ce module fait partie d'un workflow multi-dépôt impliquant :
 
 ## 📸 Screenshots
 
-### Consultation des Réservations
-![Liste des Réservations]([SCREENSHOT])
+
+### Liste des réservations
+![Liste réservations](captures/liste-resa.PNG)
